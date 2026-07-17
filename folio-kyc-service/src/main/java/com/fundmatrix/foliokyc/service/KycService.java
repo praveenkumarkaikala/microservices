@@ -19,7 +19,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 
-/** KYC record capture and verification workflow. */
+
 @Service
 public class KycService {
 
@@ -38,17 +38,9 @@ public class KycService {
         this.mapper = mapper;
     }
 
-    /**
-     * Investor self-submission: the investor uploads their own KYC details for verification.
-     * The investor is the authenticated user - no one can submit KYC on another's behalf.
-     * The record is created in PENDING state and awaits Fund Ops / Compliance verification.
-     *
-     * <p>This no longer round-trips through a local User table (User is owned by
-     * auth-user-service) - the investor id and role come straight off the JWT claims via
-     * CurrentUserService.
-     */
+   
     @Transactional
-    public KycRecordDto submit(SubmitKycRequest req) {
+    public KycRecordDto createKyc(SubmitKycRequest req) {
         if (currentUser.getRole() != Role.INVESTOR) {
             throw new BusinessException("Only investors can submit KYC");
         }
@@ -69,7 +61,7 @@ public class KycService {
     }
 
     @Transactional(readOnly = true)
-    public List<KycRecordDto> list(KycStatus status) {
+    public List<KycRecordDto> getkycList(KycStatus status) {
         List<KycRecord> records = (status == null)
                 ? kycRepository.findAll() : kycRepository.findByKycStatus(status);
         return records.stream().map(mapper::toKycDto).toList();
@@ -83,6 +75,12 @@ public class KycService {
     @Transactional(readOnly = true)
     public List<KycRecordDto> mine() {
         return listForInvestor(currentUser.getId());
+    }
+    
+    
+    @Transactional(readOnly = true)
+    public KycRecordDto getKycById(long id) {
+        return mapper.toKycDto(kycRepository.findById(id).orElseThrow(() -> ResourceNotFoundException.of("kyc", id)));
     }
 
     @Transactional
@@ -100,13 +98,7 @@ public class KycService {
         return mapper.toKycDto(record);
     }
 
-    /**
-     * Internal cross-service lookup consumed by transaction-service (pre-transaction KYC
-     * gate), nav-accounting-service, distributor-commission-service, compliance-service and
-     * dashboard-service - mirrors the monolith's
-     * KycRecordRepository.existsByInvestor_IdAndKycStatus(investorId, COMPLIANT) check that
-     * used to run in-process.
-     */
+  
     @Transactional(readOnly = true)
     public KycStatusDto kycStatusFor(Long investorId) {
         boolean compliant = kycRepository.existsByInvestorIdAndKycStatus(investorId, KycStatus.COMPLIANT);

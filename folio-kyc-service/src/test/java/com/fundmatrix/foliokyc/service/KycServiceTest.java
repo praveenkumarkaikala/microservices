@@ -59,7 +59,7 @@ class KycServiceTest {
         });
 
         SubmitKycRequest req = new SubmitKycRequest(KycType.FULL, "PAN", "ABCDE1234F");
-        KycRecordDto dto = kycService.submit(req);
+        KycRecordDto dto = kycService.createKyc(req);
 
         assertThat(dto.id()).isEqualTo(1L);
         assertThat(dto.investorId()).isEqualTo(42L);
@@ -78,7 +78,7 @@ class KycServiceTest {
 
         SubmitKycRequest req = new SubmitKycRequest(KycType.FULL, "PAN", "ABCDE1234F");
 
-        assertThatThrownBy(() -> kycService.submit(req)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> kycService.createKyc(req)).isInstanceOf(BusinessException.class);
     }
 
     @Test

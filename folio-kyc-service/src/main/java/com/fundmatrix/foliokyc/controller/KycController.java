@@ -8,6 +8,8 @@ import com.fundmatrix.foliokyc.dto.UpdateKycStatusRequest;
 import com.fundmatrix.foliokyc.service.KycService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -32,15 +34,22 @@ public class KycController {
     }
 
     @GetMapping
-    public List<KycRecordDto> list(@RequestParam(required = false) KycStatus status) {
-        return kycService.list(status);
+    public ResponseEntity<List<KycRecordDto>> getKycList(@RequestParam(required = false) KycStatus status) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(kycService.getkycList(status));
+      
     }
+
 
     @GetMapping("/investor/{investorId}")
-    public List<KycRecordDto> forInvestor(@PathVariable Long investorId) {
-        return kycService.listForInvestor(investorId);
+    public ResponseEntity<List<KycRecordDto>> forInvestor(@PathVariable Long investorId) {
+    	  return ResponseEntity.status(HttpStatus.ACCEPTED).body(kycService.listForInvestor(investorId));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<KycRecordDto> getByIdKyc(@PathVariable long id) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(kycService.getKycById(id));
+    }
+    
     @GetMapping("/mine")
     public List<KycRecordDto> mine() {
         return kycService.mine();
@@ -49,7 +58,7 @@ public class KycController {
     /** Investor self-submits (uploads) their own KYC details for verification. */
     @PostMapping
     public ResponseEntity<KycRecordDto> submit(@Valid @RequestBody SubmitKycRequest request) {
-        return ResponseEntity.ok(kycService.submit(request));
+        return ResponseEntity.ok(kycService.createKyc(request));
     }
 
     /** Fund Ops / Compliance verify an investor-submitted KYC (approve / reject). */
