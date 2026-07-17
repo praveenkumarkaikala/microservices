@@ -10,8 +10,11 @@ import com.fundmatrix.foliokyc.domain.enums.Role;
 import com.fundmatrix.foliokyc.dto.KycRecordDto;
 import com.fundmatrix.foliokyc.dto.KycStatusDto;
 import com.fundmatrix.foliokyc.dto.SubmitKycRequest;
+import com.fundmatrix.foliokyc.dto.UpdateKycRequest;
 import com.fundmatrix.foliokyc.repository.KycRecordRepository;
 import com.fundmatrix.foliokyc.security.CurrentUserService;
+
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -111,4 +114,51 @@ public class KycService {
         }
         return new KycStatusDto(investorId, status, compliant);
     }
+    
+    
+    @Transactional
+    public KycRecordDto renuewalKyc(UpdateKycRequest dto,Long id) {
+        KycRecord record = kycRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.of("KycRecord", id));
+        record.setDocumentRef(dto.documentRef());
+        record.setDocumentType(dto.documentType());
+        record.setKycType(dto.kycType());
+        record.setKycStatus(KycStatus.PENDING);
+        kycRepository.save(record);
+        auditService.record("KYC_UPDATE", "KycRecord", id, "KYC Renuewal");
+        notificationClient.notify(new NotificationRequest(record.getInvestorId(), "KYC",
+                "Your KYC status is now " + record.getKycStatus()));
+        return mapper.toKycDto(record);
+    }
+    
+    
+    public Boolean isKycExpired(LocalDate date)
+   	{
+   		if(date.plusMonths(6).isBefore(LocalDate.now()))
+   		{
+   			return true;
+   		}
+   		return false;
+   	}
+       
+       
+       
+       
+       @Scheduled(cron = "0 0 0 * * ?")
+   	public void checkKycExpiry()
+   	{
+   		List<KycRecord> records=kycRepository.findAll();
+   		
+   			for(KycRecord record:records)
+   			{
+   				if(record.getVerifiedDate() != null && record.getKycStatus()==KycStatus.COMPLIANT
+   						&& isKycExpired(record.getVerifiedDate()))
+   				{ 	
+   					record.setKycStatus(KycStatus.EXPIRED);
+   					 notificationClient.notify(new NotificationRequest(record.getInvestorId(), "KYC",
+   			                "Your KYC status is now " + record.getKycStatus()));
+   				}
+   			}
+   		
+   	}
 }
