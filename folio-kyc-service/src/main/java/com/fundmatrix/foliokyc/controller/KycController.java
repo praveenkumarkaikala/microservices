@@ -43,7 +43,7 @@ public class KycController {
 
 
     @GetMapping("/investor/{investorId}")
-    public ResponseEntity<List<KycRecordDto>> forInvestor(@PathVariable Long investorId) {
+    public ResponseEntity<KycRecordDto> forInvestor(@PathVariable Long investorId) {
     	  return ResponseEntity.status(HttpStatus.ACCEPTED).body(kycService.listForInvestor(investorId));
     }
 
@@ -53,7 +53,7 @@ public class KycController {
     }
     
     @GetMapping("/mine")
-    public List<KycRecordDto> mine() {
+    public KycRecordDto mine() {
         return kycService.mine();
     }
 

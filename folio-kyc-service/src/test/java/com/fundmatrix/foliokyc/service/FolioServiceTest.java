@@ -13,6 +13,7 @@ import com.fundmatrix.foliokyc.dto.FolioDto;
 import com.fundmatrix.foliokyc.dto.UserDto;
 import com.fundmatrix.foliokyc.repository.FolioHoldingRepository;
 import com.fundmatrix.foliokyc.repository.InvestorFolioRepository;
+import com.fundmatrix.foliokyc.repository.KycRecordRepository;
 import com.fundmatrix.foliokyc.security.CurrentUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,13 +47,15 @@ class FolioServiceTest {
     private AuditService auditService;
     @Mock
     private CurrentUserService currentUser;
-
+    
+    @Mock
+    private KycRecordRepository kycRecordRepository;
     private FolioService folioService;
 
     @BeforeEach
     void setUp() {
         folioService = new FolioService(folioRepository, holdingRepository, authUserClient,
-                fundCatalogClient, holdingService, auditService, currentUser, new Mapper());
+                fundCatalogClient, holdingService, auditService, currentUser, new Mapper(),kycRecordRepository);
         lenient().when(holdingRepository.findByFolio_Id(any())).thenReturn(List.of());
     }
 

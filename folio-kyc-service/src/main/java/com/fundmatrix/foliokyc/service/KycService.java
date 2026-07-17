@@ -48,6 +48,12 @@ public class KycService {
             throw new BusinessException("Only investors can submit KYC");
         }
         Long investorId = currentUser.getId();
+        KycRecord r = kycRepository.findByInvestorId(investorId);
+        if(r!=null)
+        {
+        	throw new BusinessException("KYC Record Already Exists");
+        }
+        
         KycRecord record = KycRecord.builder()
                 .investorId(investorId)
                 .kycType(req.kycType())
@@ -71,12 +77,17 @@ public class KycService {
     }
 
     @Transactional(readOnly = true)
-    public List<KycRecordDto> listForInvestor(Long investorId) {
-        return kycRepository.findByInvestorId(investorId).stream().map(mapper::toKycDto).toList();
+    public KycRecordDto listForInvestor(Long investorId) {
+    	KycRecord record = kycRepository.findByInvestorId(investorId);
+        if(record==null)
+        {
+        	throw ResourceNotFoundException.of("KycRecord", investorId);
+        }
+        return mapper.toKycDto(record);
     }
 
     @Transactional(readOnly = true)
-    public List<KycRecordDto> mine() {
+    public KycRecordDto mine() {
         return listForInvestor(currentUser.getId());
     }
     
@@ -104,15 +115,13 @@ public class KycService {
   
     @Transactional(readOnly = true)
     public KycStatusDto kycStatusFor(Long investorId) {
-        boolean compliant = kycRepository.existsByInvestorIdAndKycStatus(investorId, KycStatus.COMPLIANT);
-        String status = kycRepository.findByInvestorId(investorId).stream()
-                .max(Comparator.comparing(KycRecord::getId))
-                .map(r -> r.getKycStatus().name())
-                .orElse(KycStatus.PENDING.name());
-        if (compliant) {
-            status = KycStatus.COMPLIANT.name();
+       
+        KycRecord record = kycRepository.findByInvestorId(investorId);
+        if(record==null)
+        {
+        	throw ResourceNotFoundException.of("KycRecord", investorId);
         }
-        return new KycStatusDto(investorId, status, compliant);
+        return new KycStatusDto(investorId,record.getKycStatus().name(), record.getKycStatus().name().equals("COMPLIANT"));
     }
     
     

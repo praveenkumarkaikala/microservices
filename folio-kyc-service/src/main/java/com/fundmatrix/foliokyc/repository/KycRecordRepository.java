@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface KycRecordRepository extends JpaRepository<KycRecord, Long> {
 
-    List<KycRecord> findByInvestorId(Long investorId);
+    KycRecord findByInvestorId(Long investorId);
 
     List<KycRecord> findByKycStatus(KycStatus kycStatus);
 

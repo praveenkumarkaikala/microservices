@@ -7,6 +7,7 @@ import com.fundmatrix.foliokyc.common.exception.BusinessException;
 import com.fundmatrix.foliokyc.common.exception.ResourceNotFoundException;
 import com.fundmatrix.foliokyc.domain.FolioHolding;
 import com.fundmatrix.foliokyc.domain.InvestorFolio;
+import com.fundmatrix.foliokyc.domain.KycRecord;
 import com.fundmatrix.foliokyc.domain.enums.FolioStatus;
 import com.fundmatrix.foliokyc.domain.enums.Role;
 import com.fundmatrix.foliokyc.dto.CreateFolioRequest;
@@ -16,6 +17,7 @@ import com.fundmatrix.foliokyc.dto.SchemeOptionDto;
 import com.fundmatrix.foliokyc.dto.UserDto;
 import com.fundmatrix.foliokyc.repository.FolioHoldingRepository;
 import com.fundmatrix.foliokyc.repository.InvestorFolioRepository;
+import com.fundmatrix.foliokyc.repository.KycRecordRepository;
 import com.fundmatrix.foliokyc.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,7 @@ public class FolioService {
     private final FolioHoldingRepository holdingRepository;
     private final AuthUserClient authUserClient;
     private final FundCatalogClient fundCatalogClient;
+    private final KycRecordRepository kycRepository;
     private final HoldingService holdingService;
     private final AuditService auditService;
     private final CurrentUserService currentUser;
@@ -51,7 +54,7 @@ public class FolioService {
     public FolioService(InvestorFolioRepository folioRepository, FolioHoldingRepository holdingRepository,
                         AuthUserClient authUserClient, FundCatalogClient fundCatalogClient,
                         HoldingService holdingService, AuditService auditService,
-                        CurrentUserService currentUser, Mapper mapper) {
+                        CurrentUserService currentUser, Mapper mapper,KycRecordRepository kycRepository) {
         this.folioRepository = folioRepository;
         this.holdingRepository = holdingRepository;
         this.authUserClient = authUserClient;
@@ -60,13 +63,21 @@ public class FolioService {
         this.auditService = auditService;
         this.currentUser = currentUser;
         this.mapper = mapper;
+        this.kycRepository=kycRepository;
     }
 
     @Transactional
     public FolioDto create(CreateFolioRequest req) {
         UserDto investor = resolveInvestor(req);
         Long distributorId = resolveDistributorId(req);
-
+        
+        KycRecord record=kycRepository.findByInvestorId(investor.id());
+        
+        if(record==null)
+        {
+        	throw new BusinessException("Kyc Not Verified");
+        }
+        
         InvestorFolio folio = InvestorFolio.builder()
                 .investorId(investor.id())
                 .distributorId(distributorId)
