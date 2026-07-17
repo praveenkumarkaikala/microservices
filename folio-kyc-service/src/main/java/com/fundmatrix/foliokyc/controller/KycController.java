@@ -55,24 +55,18 @@ public class KycController {
         return kycService.mine();
     }
 
-    /** Investor self-submits (uploads) their own KYC details for verification. */
+  
     @PostMapping
     public ResponseEntity<KycRecordDto> submit(@Valid @RequestBody SubmitKycRequest request) {
         return ResponseEntity.ok(kycService.createKyc(request));
     }
 
-    /** Fund Ops / Compliance verify an investor-submitted KYC (approve / reject). */
+  
     @PatchMapping("/{id}/status")
     public KycRecordDto updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateKycStatusRequest request) {
         return kycService.updateStatus(id, request.kycStatus());
     }
 
-    /**
-     * Internal endpoint consumed by transaction-service, nav-accounting-service,
-     * distributor-commission-service, compliance-service and dashboard-service as the KYC
-     * gate/lookup. Not role-restricted in SecurityConfig - any authenticated caller (the
-     * forwarded original caller's token) may query it.
-     */
     @GetMapping("/status/{investorId}")
     public KycStatusDto status(@PathVariable Long investorId) {
         return kycService.kycStatusFor(investorId);
