@@ -4,9 +4,11 @@ import com.fundmatrix.foliokyc.client.NotificationClient;
 import com.fundmatrix.foliokyc.client.NotificationClient.NotificationRequest;
 import com.fundmatrix.foliokyc.common.exception.BusinessException;
 import com.fundmatrix.foliokyc.common.exception.ResourceNotFoundException;
+import com.fundmatrix.foliokyc.domain.InvestorFolio;
 import com.fundmatrix.foliokyc.domain.KycRecord;
 import com.fundmatrix.foliokyc.domain.enums.KycStatus;
 import com.fundmatrix.foliokyc.domain.enums.Role;
+import com.fundmatrix.foliokyc.dto.FolioDto;
 import com.fundmatrix.foliokyc.dto.KycRecordDto;
 import com.fundmatrix.foliokyc.dto.KycStatusDto;
 import com.fundmatrix.foliokyc.dto.SubmitKycRequest;
@@ -31,14 +33,16 @@ public class KycService {
     private final AuditService auditService;
     private final CurrentUserService currentUser;
     private final Mapper mapper;
+    private FolioService folioService;
 
     public KycService(KycRecordRepository kycRepository, NotificationClient notificationClient,
-                      AuditService auditService, CurrentUserService currentUser, Mapper mapper) {
+                      AuditService auditService, CurrentUserService currentUser, Mapper mapper,FolioService folioService) {
         this.kycRepository = kycRepository;
         this.notificationClient = notificationClient;
         this.auditService = auditService;
         this.currentUser = currentUser;
         this.mapper = mapper;
+        this.folioService=folioService;
     }
 
    
@@ -73,7 +77,7 @@ public class KycService {
     public List<KycRecordDto> getkycList(KycStatus status) {
         List<KycRecord> records = (status == null)
                 ? kycRepository.findAll() : kycRepository.findByKycStatus(status);
-        return records.stream().map(mapper::toKycDto).toList();
+        return records.stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -170,4 +174,10 @@ public class KycService {
    			}
    		
    	}
+       
+       private KycRecordDto toDto(KycRecord record) {
+           String investorName = folioService.safeInvestorName(record.getInvestorId());
+           return mapper.toKycDto(record, investorName);
+       }
+       
 }

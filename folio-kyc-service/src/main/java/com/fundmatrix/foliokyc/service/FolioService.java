@@ -196,7 +196,7 @@ public class FolioService {
         return mapper.toFolioDto(folio, Calc.money(currentValue), investorName);
     }
 
-    private String safeInvestorName(Long investorId) {
+    public String safeInvestorName(Long investorId) {
         try {
             UserDto user = authUserClient.getUser(investorId);
             return user != null ? user.name() : null;

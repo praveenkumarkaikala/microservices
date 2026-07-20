@@ -42,10 +42,13 @@ class KycServiceTest {
     private CurrentUserService currentUser;
 
     private KycService kycService;
+    
+    @Mock
+    private FolioService folioService;
 
     @BeforeEach
     void setUp() {
-        kycService = new KycService(kycRepository, notificationClient, auditService, currentUser, new Mapper());
+        kycService = new KycService(kycRepository, notificationClient, auditService, currentUser, new Mapper(),folioService);
     }
 
     @Test

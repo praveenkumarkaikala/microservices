@@ -42,7 +42,12 @@ public class Mapper {
     }
 
     public KycRecordDto toKycDto(KycRecord k) {
-        return new KycRecordDto(k.getId(), k.getInvestorId(), k.getKycType(), k.getDocumentType(),
+        return new KycRecordDto(k.getId(), k.getInvestorId(),null, k.getKycType(), k.getDocumentType(),
+                k.getDocumentRef(), k.getVerifiedDate(), k.getKycStatus());
+    }
+    
+    public KycRecordDto toKycDto(KycRecord k,String investorName) {
+        return new KycRecordDto(k.getId(), k.getInvestorId(),investorName, k.getKycType(), k.getDocumentType(),
                 k.getDocumentRef(), k.getVerifiedDate(), k.getKycStatus());
     }
 }

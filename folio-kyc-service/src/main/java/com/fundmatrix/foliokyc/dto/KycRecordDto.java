@@ -13,6 +13,7 @@ import java.time.LocalDate;
 public record KycRecordDto(
         Long id,
         Long investorId,
+        String investorName,
         KycType kycType,
         String documentType,
         String documentRef,
