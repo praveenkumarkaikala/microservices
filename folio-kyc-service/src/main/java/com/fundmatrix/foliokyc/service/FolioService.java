@@ -136,7 +136,7 @@ public class FolioService {
         return toDto(folioRepository.save(folio));
     }
 
-    /** Loads a folio enforcing role-based visibility; hides existence on access denial. */
+
     @Transactional(readOnly = true)
     public InvestorFolio loadAccessible(Long id) {
         InvestorFolio folio = folioRepository.findById(id)

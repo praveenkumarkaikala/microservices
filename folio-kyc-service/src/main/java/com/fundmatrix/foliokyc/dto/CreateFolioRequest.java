@@ -1,5 +1,7 @@
 package com.fundmatrix.foliokyc.dto;
 
+import java.util.List;
+
 import com.fundmatrix.foliokyc.domain.enums.ModeOfHolding;
 import com.fundmatrix.foliokyc.domain.enums.TaxStatus;
 import jakarta.validation.constraints.NotNull;
@@ -11,7 +13,7 @@ public record CreateFolioRequest(
         Long distributorId,
         @NotNull TaxStatus taxStatus,
         @NotNull ModeOfHolding modeOfHolding,
-        @Size(max = 255) String nomineeDetails,
+         List<NomineeDetails> nomineeDetails,
         @Size(max = 60) String bankAccountRef
 ) {
 }

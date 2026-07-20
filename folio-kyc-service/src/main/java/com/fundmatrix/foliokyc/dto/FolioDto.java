@@ -5,6 +5,7 @@ import com.fundmatrix.foliokyc.domain.enums.ModeOfHolding;
 import com.fundmatrix.foliokyc.domain.enums.TaxStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * distributorName is intentionally omitted (simplification): distributor-commission-service
@@ -19,7 +20,7 @@ public record FolioDto(
         Long distributorId,
         TaxStatus taxStatus,
         ModeOfHolding modeOfHolding,
-        String nomineeDetails,
+        List<NomineeDetails> nomineeDetails,
         String bankAccountRef,
         FolioStatus status,
         BigDecimal currentValue

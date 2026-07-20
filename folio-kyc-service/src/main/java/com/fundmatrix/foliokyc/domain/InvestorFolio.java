@@ -1,9 +1,16 @@
 package com.fundmatrix.foliokyc.domain;
 
+import java.util.List;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.fundmatrix.foliokyc.common.BaseEntity;
 import com.fundmatrix.foliokyc.domain.enums.FolioStatus;
 import com.fundmatrix.foliokyc.domain.enums.ModeOfHolding;
 import com.fundmatrix.foliokyc.domain.enums.TaxStatus;
+import com.fundmatrix.foliokyc.dto.NomineeDetails;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -33,15 +40,15 @@ import lombok.Setter;
 @Builder
 public class InvestorFolio extends BaseEntity {
 
-    /** Human-readable folio number, e.g. "FOL00001"; assigned from the id immediately after insert. */
+  
     @Column(name = "folio_number", unique = true, length = 30)
     private String folioNumber;
 
-    /** Owning investor's user id (auth-user-service). */
+   
     @Column(name = "investor_id", nullable = false)
     private Long investorId;
 
-    /** Servicing distributor's id (distributor-commission-service), if any. */
+    
     @Column(name = "distributor_id")
     private Long distributorId;
 
@@ -53,8 +60,9 @@ public class InvestorFolio extends BaseEntity {
     @Column(name = "mode_of_holding", nullable = false, length = 30)
     private ModeOfHolding modeOfHolding;
 
-    @Column(name = "nominee_details", length = 255)
-    private String nomineeDetails;
+    @JdbcTypeCode(SqlTypes.JSON)
+	@Column(columnDefinition = "json",name = "nomineeDetails")
+	List<NomineeDetails> nomineeDetails;
 
     @Column(name = "bank_account_ref", length = 60)
     private String bankAccountRef;
