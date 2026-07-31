@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,9 +45,16 @@ import java.util.Set;
  *       list-all endpoint in the Feign contract) nor re-aggregate holdings scheme-wide (no such
  *       endpoint either - folio-transaction-service's contract only aggregates AUM by
  *       distributor). It instead iterates the distinct scheme ids that have at least one NAV
- *       record captured in THIS service, and reports the totals already persisted on each
- *       scheme's latest {@link NavRecord} (totalAum/totalUnitsOutstanding are populated at
- *       publish() time). This is a deliberate, documented simplification.</li>
+ *       record captured in THIS service, then the distinct option ids under each scheme (a
+ *       scheme can have multiple options - Growth, Dividend Payout, Dividend Reinvestment -
+ *       each with its own holdings). AUM and units outstanding are computed LIVE per option via
+ *       {@link FolioKycClient#getHoldingsByOption} and summed across every option in the scheme
+ *       - NOT read from {@link NavRecord#getTotalAum()}/{@code getTotalUnitsOutstanding()},
+ *       which are a one-time snapshot taken at publish() time and go stale the moment a
+ *       subscription/redemption changes holdings afterward (this used to make AUM read as 0 for
+ *       an option whose NAV was published before its first holding existed). latestNav is not
+ *       summable across options, so it stays a representative figure - the NAV value of
+ *       whichever option was published most recently.</li>
  * </ul>
  */
 @Service
@@ -188,12 +196,30 @@ public class NavService {
         List<AumSummaryDto> out = new ArrayList<>();
         for (Long schemeId : schemeIds) {
             SchemeDto scheme = FeignSupport.call(() -> fundCatalogClient.getScheme(schemeId), "FundScheme", schemeId);
-            NavRecord latest = navRepository.findTopBySchemeIdOrderByNavDateDesc(schemeId).orElse(null);
-            BigDecimal aum = latest != null ? latest.getTotalAum() : null;
-            BigDecimal units = latest != null ? latest.getTotalUnitsOutstanding() : null;
-            BigDecimal latestNav = latest != null ? latest.getNavValue() : null;
+
+            BigDecimal aum = BigDecimal.ZERO;
+            BigDecimal units = BigDecimal.ZERO;
+            BigDecimal latestNav = null;
+            LocalDate latestNavDate = null;
+            for (Long optionId : navRepository.findDistinctOptionIdsBySchemeId(schemeId)) {
+                List<HoldingDto> holdings = FeignSupport.call(
+                        () -> folioTransactionClient.getHoldingsByOption(optionId), "Holdings", optionId);
+                for (HoldingDto h : holdings) {
+                    aum = aum.add(Calc.nz(h.currentValue()));
+                    units = units.add(Calc.nz(h.unitsHeld()));
+                }
+
+                NavRecord latest = navRepository.findTopByOptionIdOrderByNavDateDesc(optionId).orElse(null);
+                if (latest == null) {
+                    continue;
+                }
+                if (latestNavDate == null || latest.getNavDate().isAfter(latestNavDate)) {
+                    latestNavDate = latest.getNavDate();
+                    latestNav = latest.getNavValue();
+                }
+            }
             out.add(new AumSummaryDto(schemeId, scheme.schemeName(), scheme.schemeCode(), scheme.category(),
-                    latestNav, Calc.money(Calc.nz(aum)), Calc.units(Calc.nz(units))));
+                    latestNav, Calc.money(aum), Calc.units(units)));
         }
         return out;
     }
