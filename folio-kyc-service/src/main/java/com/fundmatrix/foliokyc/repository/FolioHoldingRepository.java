@@ -16,7 +16,9 @@ public interface FolioHoldingRepository extends JpaRepository<FolioHolding, Long
     List<FolioHolding> findBySchemeId(Long schemeId);
 
     List<FolioHolding> findByOptionId(Long optionId);
-
+    
+    List<FolioHolding> findByFolio_IdIn(List<Long> ids);
+    
     List<FolioHolding> findByFolio_InvestorId(Long investorId);
 
     Optional<FolioHolding> findByFolio_IdAndOptionId(Long folioId, Long optionId);

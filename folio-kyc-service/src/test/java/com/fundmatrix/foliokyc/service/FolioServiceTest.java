@@ -4,6 +4,7 @@ import com.fundmatrix.foliokyc.client.AuthUserClient;
 import com.fundmatrix.foliokyc.client.FundCatalogClient;
 import com.fundmatrix.foliokyc.common.exception.ResourceNotFoundException;
 import com.fundmatrix.foliokyc.domain.InvestorFolio;
+import com.fundmatrix.foliokyc.domain.KycRecord;
 import com.fundmatrix.foliokyc.domain.enums.FolioStatus;
 import com.fundmatrix.foliokyc.domain.enums.ModeOfHolding;
 import com.fundmatrix.foliokyc.domain.enums.Role;
@@ -64,6 +65,8 @@ class FolioServiceTest {
         when(currentUser.getRole()).thenReturn(Role.INVESTOR);
         when(currentUser.getId()).thenReturn(42L);
         when(authUserClient.getUser(42L)).thenReturn(new UserDto(42L, "Jane Doe", "jane@x.com", "INVESTOR", "ACTIVE"));
+        KycRecord record=new KycRecord();
+        when(kycRecordRepository.findByInvestorId(42L)).thenReturn(record);
         when(folioRepository.save(any())).thenAnswer(inv -> {
             InvestorFolio f = inv.getArgument(0);
             if (f.getId() == null) {
