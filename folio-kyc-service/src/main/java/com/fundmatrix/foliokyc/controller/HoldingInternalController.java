@@ -4,6 +4,7 @@ import com.fundmatrix.foliokyc.domain.FolioHolding;
 import com.fundmatrix.foliokyc.dto.CreditUnitsRequest;
 import com.fundmatrix.foliokyc.dto.DebitUnitsRequest;
 import com.fundmatrix.foliokyc.dto.HoldingDto;
+import com.fundmatrix.foliokyc.dto.HoldingPortifolio;
 import com.fundmatrix.foliokyc.dto.RevalueRequest;
 import com.fundmatrix.foliokyc.repository.FolioHoldingRepository;
 import com.fundmatrix.foliokyc.repository.InvestorFolioRepository;
@@ -22,13 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Internal, service-to-service endpoints producing holding data for transaction-service,
- * nav-accounting-service, distributor-commission-service, compliance-service and
- * dashboard-service. Secured the same way as everything else not explicitly listed in
- * SecurityConfig - any authenticated (forwarded) caller token - since Feign calls carry the
- * original caller's Authorization header.
- */
+
 @RestController
 @RequestMapping("/holdings")
 @Tag(name = "Holdings (internal)", description = "Service-to-service holding queries and mutations")
@@ -48,12 +43,7 @@ public class HoldingInternalController {
         this.mapper = mapper;
     }
 
-    /**
-     * @Transactional here (not just on the service methods) because the FolioHolding.folio
-     * relation is LAZY and open-in-view is disabled - h.getFolio().getInvestorId() must run
-     * while the Hibernate session from the repository query is still open, i.e. inside the
-     * same transactional method that does the fetch/mapping, not after it returns.
-     */
+   
     @GetMapping("/option/{optionId}")
     @Transactional(readOnly = true)
     public List<HoldingDto> byOption(@PathVariable Long optionId) {
@@ -95,4 +85,12 @@ public class HoldingInternalController {
     public Long folioCount(@PathVariable Long distributorId) {
         return folioRepository.countByDistributorId(distributorId);
     }
+    
+    
+    @GetMapping("/portfolio")
+    public HoldingPortifolio getportfolio() {
+        return holdingService.getinvestorPortfolio();
+    }
+    
+    
 }

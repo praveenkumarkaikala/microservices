@@ -5,8 +5,12 @@ import com.fundmatrix.foliokyc.common.exception.BusinessException;
 import com.fundmatrix.foliokyc.common.exception.ResourceNotFoundException;
 import com.fundmatrix.foliokyc.domain.FolioHolding;
 import com.fundmatrix.foliokyc.domain.InvestorFolio;
+import com.fundmatrix.foliokyc.dto.FolioHoldingDto;
+import com.fundmatrix.foliokyc.dto.HoldingPortifolio;
 import com.fundmatrix.foliokyc.repository.FolioHoldingRepository;
 import com.fundmatrix.foliokyc.repository.InvestorFolioRepository;
+import com.fundmatrix.foliokyc.security.CurrentUserService;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,36 +18,22 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Central authority for unit-holding mathematics: crediting/debiting units, weighted
- * average cost maintenance, and NAV-based revaluation. Keeps allotment, dividend
- * reinvestment and NAV publication consistent.
- *
- * NOTE: NAV lookups are performed by transaction-service (which owns NavAccountingClient)
- * and the resolved navValue is passed into creditUnits/debitUnits/revalueOption below via
- * the internal /holdings/** endpoints, exactly as they already did for the underlying
- * arithmetic.
- */
 @Service
 public class HoldingService {
 
     private final FolioHoldingRepository holdingRepository;
     private final InvestorFolioRepository folioRepository;
-
+    private final Mapper mapper;
+    private final CurrentUserService currentUser;
     public HoldingService(FolioHoldingRepository holdingRepository,
-                          InvestorFolioRepository folioRepository) {
+                          InvestorFolioRepository folioRepository,Mapper mapper,CurrentUserService currentUser) {
         this.holdingRepository = holdingRepository;
         this.folioRepository = folioRepository;
+        this.mapper=mapper;
+        this.currentUser=currentUser;
     }
 
-    /**
-     * Adds units to a holding (creating it if necessary) and updates the weighted-average
-     * cost using the invested amount, then revalues at the given NAV. Callers now only
-     * hold ids (folio/scheme/option), since only folio is a local aggregate and even it
-     * may be known only by id (e.g. the internal /holdings/credit endpoint) - the folio is
-     * always (re-)loaded here to keep the signature uniform for both in-process and
-     * Feign-driven callers.
-     */
+  
     @Transactional
     public FolioHolding creditUnits(Long folioId, Long schemeId, Long optionId,
                                     BigDecimal addUnits, BigDecimal investedAmount, BigDecimal navValue) {
@@ -70,11 +60,7 @@ public class HoldingService {
         return holdingRepository.save(holding);
     }
 
-    /**
-     * Removes units from a holding; average cost is unchanged on redemption. Takes folioId
-     * (not an InvestorFolio reference) so it works identically for the internal
-     * /holdings/debit endpoint as for any in-process caller.
-     */
+   
     @Transactional
     public FolioHolding debitUnits(Long folioId, Long optionId,
                                    BigDecimal redeemUnits, BigDecimal navValue) {
@@ -92,7 +78,7 @@ public class HoldingService {
         return holdingRepository.save(holding);
     }
 
-    /** Revalues every holding in an option to a new NAV — used on NAV publication. */
+   
     @Transactional
     public int revalueOption(Long optionId, BigDecimal navValue) {
         List<FolioHolding> holdings = holdingRepository.findByOptionId(optionId);
@@ -112,5 +98,27 @@ public class HoldingService {
             holding.setUnrealisedGainLoss(Calc.money(value.subtract(cost)));
         }
         holding.setLastUpdated(Instant.now());
+    }
+    
+    
+    
+    @Transactional(readOnly = true)
+    public HoldingPortifolio getinvestorPortfolio() {
+    	List<InvestorFolio> folios=folioRepository.findByInvestorId(currentUser.getId());
+		
+		List<Long> folioIds=folios.stream().map((folio)->folio.getId()).toList();
+		
+		List<FolioHolding> holdings=holdingRepository.findByFolio_IdIn(folioIds);
+		
+		BigDecimal totalValue=holdings.stream().map((holding)->holding.getCurrentValue()).reduce(BigDecimal.ZERO,(sum,value)->sum.add(value));
+		BigDecimal totalGainOrLoss=holdings.stream().map((holding)->holding.getUnrealisedGainLoss()).reduce(BigDecimal.ZERO,(sum,value)->sum.add(value));
+		
+//		List<FolioHoldingDto> holdingSummaries=holdings.stream().map((holding)->
+//		{
+//			BigDecimal latestNav=latestNavOrNull(holding.getOptionId());
+//			return mapper.toHoldingDto(holding, latestNav);
+//		}
+//				).toList();
+		return new HoldingPortifolio(currentUser.getId(), totalValue, totalGainOrLoss);
     }
 }
