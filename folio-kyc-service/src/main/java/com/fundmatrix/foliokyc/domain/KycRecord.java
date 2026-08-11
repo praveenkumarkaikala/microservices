@@ -17,20 +17,9 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
-/**
- * KYC verification record for an investor. Tracks the KYC mode, the supporting document,
- * verification date and compliance status.
- *
- * <p>The investor is referenced by plain {@code investorId} rather than a JPA relation:
- * {@code User} is owned by auth-user-service, which this service does not have a local
- * table for. This is an independent plain-id column from InvestorFolio.investorId - no
- * JPA relation between KycRecord and InvestorFolio is needed even though they now live in
- * the same schema.
- */
+
 @Entity
-@Table(name = "kyc_records", indexes = {
-        @Index(name = "idx_kyc_investor", columnList = "investor_id")
-})
+@Table(name = "kyc_records")
 @Getter
 @Setter
 @NoArgsConstructor

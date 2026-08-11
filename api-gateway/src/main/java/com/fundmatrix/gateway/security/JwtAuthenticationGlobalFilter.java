@@ -14,12 +14,6 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * Edge-level JWT pre-authentication. Rejects missing/invalid/expired tokens before
- * a request ever reaches a downstream service. Each microservice still independently
- * validates the token and applies its own hasAuthority rules (defense in depth) -
- * this filter only forwards the decoded identity as headers for convenience/logging.
- */
 @Component
 public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 

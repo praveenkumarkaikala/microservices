@@ -44,7 +44,7 @@ public class KycController {
 
     @GetMapping("/investor/{investorId}")
     public ResponseEntity<KycRecordDto> forInvestor(@PathVariable Long investorId) {
-    	  return ResponseEntity.status(HttpStatus.ACCEPTED).body(kycService.listForInvestor(investorId));
+    	  return ResponseEntity.status(HttpStatus.ACCEPTED).body(kycService.kycForInvestor(investorId));
     }
 
     @GetMapping("/{id}")

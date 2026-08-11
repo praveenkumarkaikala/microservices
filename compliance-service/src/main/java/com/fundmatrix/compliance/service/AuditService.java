@@ -5,11 +5,7 @@ import com.fundmatrix.compliance.client.AuditLogRequest;
 import com.fundmatrix.compliance.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 
-/**
- * Thin wrapper around the audit-service Feign client. Keeps the same method signature the
- * monolith's local AuditService exposed so existing auditService.record(...) call sites in
- * ComplianceService don't need to change.
- */
+
 @Service
 public class AuditService {
 

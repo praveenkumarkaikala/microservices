@@ -3,7 +3,7 @@ package com.fundmatrix.foliokyc.common.exception;
 import java.time.Instant;
 import java.util.Map;
 
-/** Standard error envelope returned by the {@link GlobalExceptionHandler}. */
+
 public record ApiError(
         Instant timestamp,
         int status,

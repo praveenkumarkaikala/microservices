@@ -30,21 +30,24 @@ public class SecurityConfig {
                 .csrf(c -> c.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ── PUBLIC ──
+                        
                         .requestMatchers(
                                 "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
                                 "/actuator/**"
                         ).permitAll()
 
-                        // ── INVESTOR / DISTRIBUTOR / FUND_OPS / ADMIN ──
+                       
                         .requestMatchers(HttpMethod.POST, "/folios")
                             .hasAnyAuthority("INVESTOR", "DISTRIBUTOR", "FUND_OPS", "ADMIN")
+                            
+                            .requestMatchers(HttpMethod.GET, "/holdings/**")
+                            .hasAnyAuthority("INVESTOR", "DISTRIBUTOR", "FUND_OPS", "ADMIN","FUND_ACCOUNTANT")
 
-                        // ── FUND_OPS / ADMIN ──
+                       
                         .requestMatchers(HttpMethod.PATCH, "/folios/*/status")
                             .hasAnyAuthority("FUND_OPS", "ADMIN")
 
-                        // ── KYC ──
+                       
                         .requestMatchers(HttpMethod.GET, "/kyc/mine").hasAuthority("INVESTOR")
                         .requestMatchers(HttpMethod.POST, "/kyc").hasAuthority("INVESTOR")
                         .requestMatchers(HttpMethod.GET, "/kyc", "/kyc/investor/**")
@@ -52,9 +55,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/kyc/*/status")
                                 .hasAnyAuthority("FUND_OPS", "COMPLIANCE", "ADMIN")
 
-                        // ── everything else (incl. internal /holdings/**, /kyc/status/{id},
-                        // /folios/{id} endpoints, called with the original caller's forwarded
-                        // token) ──
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) -> {

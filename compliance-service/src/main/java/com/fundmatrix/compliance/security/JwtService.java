@@ -10,11 +10,6 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-/**
- * Validates JWTs issued by auth-user-service. Every microservice shares the same HMAC
- * secret (fundmatrix.jwt.secret, delivered by the config server) so a single token
- * works everywhere - only auth-user-service also implements generateToken(User).
- */
 @Service
 public class JwtService {
 

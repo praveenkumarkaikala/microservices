@@ -3,7 +3,7 @@ package com.fundmatrix.foliokyc.common;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/** Money/unit arithmetic helpers with consistent scales and HALF_UP rounding. */
+
 public final class Calc {
 
     public static final int UNIT_SCALE = 4;

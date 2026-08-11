@@ -10,10 +10,6 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-/**
- * Same HMAC secret/claims layout as the monolith's JwtService, shared across
- * every microservice so a token issued by auth-user-service validates everywhere.
- */
 @Component
 public class JwtSupport {
 

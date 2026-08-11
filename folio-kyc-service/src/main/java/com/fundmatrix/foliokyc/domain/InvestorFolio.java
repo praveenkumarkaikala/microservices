@@ -23,11 +23,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * An investor's account (folio) within the AMC. The owning investor (auth-user-service)
- * and optional servicing distributor (distributor-commission-service) now live in other
- * microservices, so they are referenced here only by plain id columns - no JPA relation.
- */
 @Entity
 @Table(name = "investor_folios", indexes = {
         @Index(name = "idx_folio_number", columnList = "folio_number", unique = true),

@@ -94,7 +94,7 @@ class ComplianceServiceTest {
     @Test
     void flags_delegatesToFeignClient_withStatusName() {
         TransactionFlagDto flag = new TransactionFlagDto(1L, 10L, "High value", BigDecimal.TEN,
-                FlagStatus.OPEN, Instant.now());
+                FlagStatus.OPEN, Instant.now(),Instant.now());
         when(transactionClient.flags("OPEN")).thenReturn(List.of(flag));
 
         List<TransactionFlagDto> result = complianceService.flags(FlagStatus.OPEN);

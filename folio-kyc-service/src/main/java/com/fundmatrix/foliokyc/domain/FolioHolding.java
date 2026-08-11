@@ -18,20 +18,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * The unit holding of a folio in a specific scheme option. Maintains units held,
- * average cost NAV and (NAV-derived) current value with unrealised gain/loss.
- * Scheme/option identity is stored as plain ids since FundScheme/SchemeOption now live
- * in fund-catalog-service.
- */
 @Entity
-@Table(name = "folio_holdings",
-        uniqueConstraints = @UniqueConstraint(name = "uk_holding_folio_option",
-                columnNames = {"folio_id", "option_id"}),
-        indexes = {
-                @Index(name = "idx_holding_folio", columnList = "folio_id"),
-                @Index(name = "idx_holding_scheme", columnList = "scheme_id")
-        })
+@Table(name = "folio_holdings")
 @Getter
 @Setter
 @NoArgsConstructor

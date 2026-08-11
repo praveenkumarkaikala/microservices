@@ -5,11 +5,6 @@ import com.fundmatrix.foliokyc.client.AuditClient.AuditLogRequest;
 import com.fundmatrix.foliokyc.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 
-/**
- * Thin wrapper over audit-service's Feign client. Keeps the same
- * record(action, entityType, recordId, details) signature as the monolith so migrated
- * call sites in the business services don't change.
- */
 @Service
 public class AuditService {
 

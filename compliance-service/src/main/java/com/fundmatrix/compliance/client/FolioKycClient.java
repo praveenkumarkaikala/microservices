@@ -9,12 +9,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-/**
- * compliance-service owns no KYC data at all - KycRecord lives in folio-kyc-service.
- * ComplianceService's kycStatus()/generateReport() delegate here instead of querying a
- * local KycRecordRepository. Only the subset of folio-kyc-service's KYC endpoints this
- * service actually needs is declared.
- */
 @FeignClient(name = "folio-kyc-service", path = "/api")
 public interface FolioKycClient {
 

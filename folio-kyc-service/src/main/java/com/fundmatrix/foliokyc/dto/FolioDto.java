@@ -23,6 +23,7 @@ public record FolioDto(
         List<NomineeDetails> nomineeDetails,
         String bankAccountRef,
         FolioStatus status,
-        BigDecimal currentValue
+        BigDecimal currentValue,
+        String distributorName
 ) {
 }

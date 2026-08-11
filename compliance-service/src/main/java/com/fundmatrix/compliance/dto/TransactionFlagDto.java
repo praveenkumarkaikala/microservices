@@ -5,18 +5,18 @@ import com.fundmatrix.compliance.domain.enums.FlagStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * Plain response shape for transaction-service's transaction-flags endpoints
- * (GET /transactions/flags, PATCH /transactions/flags/{id}/review). TransactionFlag itself
- * is owned by transaction-service - this is just the wire shape for the Feign call,
- * not a JPA entity.
- */
+
 public record TransactionFlagDto(
-        Long id,
+		Long id,
         Long transactionId,
-        String reason,
+        String transactionRef,
+        String folioNumber,
+        String schemeName,
         BigDecimal amount,
+        String reason,
         FlagStatus status,
-        Instant createdDate
+        String reviewNote,
+        Instant createdDate,
+        Instant reviewedDate
 ) {
 }

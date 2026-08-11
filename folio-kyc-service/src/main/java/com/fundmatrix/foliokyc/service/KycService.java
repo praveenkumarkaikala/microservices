@@ -77,11 +77,11 @@ public class KycService {
     public List<KycRecordDto> getkycList(KycStatus status) {
         List<KycRecord> records = (status == null)
                 ? kycRepository.findAll() : kycRepository.findByKycStatus(status);
-        return records.stream().map(this::toDto).toList();
+        return records.stream().map((record)->{return toDto(record);}).toList();
     }
 
     @Transactional(readOnly = true)
-    public KycRecordDto listForInvestor(Long investorId) {
+    public KycRecordDto kycForInvestor(Long investorId) {
     	KycRecord record = kycRepository.findByInvestorId(investorId);
         if(record==null)
         {
@@ -92,7 +92,7 @@ public class KycService {
 
     @Transactional(readOnly = true)
     public KycRecordDto mine() {
-        return listForInvestor(currentUser.getId());
+        return kycForInvestor(currentUser.getId());
     }
     
     

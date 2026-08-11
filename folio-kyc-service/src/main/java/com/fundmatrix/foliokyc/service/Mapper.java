@@ -11,20 +11,13 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
-/**
- * Maps entities to their outward DTOs. Scheme/option names and investor names are no
- * longer navigable via JPA relations (those aggregates moved to fund-catalog-service /
- * auth-user-service), so mapper methods now accept them as parameters - callers fetch
- * them (usually via a Feign client they already needed for business-rule checks) and
- * pass them in.
- */
 @Component
 public class Mapper {
 
-    public FolioDto toFolioDto(InvestorFolio f, BigDecimal currentValue, String investorName) {
+    public FolioDto toFolioDto(InvestorFolio f, BigDecimal currentValue, String investorName,String distributorName) {
         return new FolioDto(f.getId(), f.getFolioNumber(), f.getInvestorId(), investorName,
                 f.getDistributorId(), f.getTaxStatus(), f.getModeOfHolding(), f.getNomineeDetails(),
-                f.getBankAccountRef(), f.getStatus(), currentValue);
+                f.getBankAccountRef(), f.getStatus(), currentValue,distributorName);
     }
 
     public FolioHoldingDto toHoldingDto(FolioHolding h, BigDecimal latestNav, String schemeName,

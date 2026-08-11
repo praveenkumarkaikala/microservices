@@ -63,7 +63,7 @@ public class CommissionService {
                 .orElseThrow(() -> ResourceNotFoundException.of("Distributor", req.distributorId()));
         SchemeDto scheme = requireScheme(req.schemeId());
 
-        BigDecimal aum = Calc.money(folioTransactionClient.aumForDistributor(distributor.getId(), scheme.id()));
+        BigDecimal aum = Calc.money(folioTransactionClient.aumForDistributor(distributor.getUserId(), scheme.id()));
         // One billing month of an annualised trail rate on the period-end AUM.
         BigDecimal annual = Calc.percentOf(aum, req.trailRate());
         BigDecimal commission = annual.divide(MONTHS, Calc.AMOUNT_SCALE, Calc.RM);

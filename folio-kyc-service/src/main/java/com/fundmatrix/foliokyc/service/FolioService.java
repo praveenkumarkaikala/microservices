@@ -24,20 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-
-/**
- * Investor folio lifecycle and holdings, with role-scoped visibility.
- *
- * KNOWN LIMITATION: distributor-commission-service (which owns Distributor) is not a
- * contracted Feign consumer of this service, so there is no way to resolve "which
- * Distributor record belongs to the current DISTRIBUTOR-role user" (that mapping lived on
- * Distributor.user in the monolith). This migration assumes the JWT-carried user id can be
- * used directly as distributorId for DISTRIBUTOR-role scoping; revisit once a
- * distributor-commission-service Feign contract is added for this service.
- *
- * Note: this class intentionally has no dependency on KycService/KycRecordRepository -
- * Folio and KYC merely live in the same module/schema now, they are not coupled.
- */
 @Service
 public class FolioService {
 
@@ -64,6 +50,35 @@ public class FolioService {
         this.currentUser = currentUser;
         this.mapper = mapper;
         this.kycRepository=kycRepository;
+    }
+    
+    
+    private UserDto resolveInvestor(CreateFolioRequest req) {
+        if (currentUser.getRole() == Role.INVESTOR) {
+            return authUserClient.getUser(currentUser.getId());
+        }
+        if (req.investorId() == null) {
+            throw new BusinessException("investorId is required when creating a folio on behalf of an investor");
+        }
+        UserDto investor = authUserClient.getUser(req.investorId());
+        if (investor == null) {
+            throw ResourceNotFoundException.of("User", req.investorId());
+        }
+        if (!"INVESTOR".equals(investor.role())) {
+            throw new BusinessException("Folios can only be created for users with the INVESTOR role");
+        }
+        return investor;
+    }
+
+    private Long resolveDistributorId(CreateFolioRequest req) {
+        if (req.distributorId() != null) {
+            return req.distributorId();
+        }
+//        if (currentUser.getRole() == Role.DISTRIBUTOR) {
+//            // See class-level note: distributorId is assumed == the DISTRIBUTOR user's id.
+//            return currentUser.getId();
+//        }
+        return null;
     }
 
     @Transactional
@@ -93,7 +108,7 @@ public class FolioService {
 
         auditService.record("FOLIO_CREATE", "InvestorFolio", folio.getId(),
                 "Folio " + folio.getFolioNumber() + " for investor " + investor.name());
-        return toDto(folio, investor.name());
+        return toDto(folio);
     }
 
     @Transactional(readOnly = true)
@@ -105,7 +120,26 @@ public class FolioService {
             case DISTRIBUTOR -> folioRepository.findByDistributorId(currentUser.getId());
             default -> folioRepository.findAll();
         };
-        return folios.stream().map(this::toDto).toList();
+        System.out.println(folios);
+        return folios.stream().map((folio)->{return toDto(folio);}).toList();
+    }
+    
+    @Transactional(readOnly = true)
+    public InvestorFolio loadAccessible(Long id) {
+        InvestorFolio folio = folioRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.of("InvestorFolio", id));
+        Role role = currentUser.getRole();
+        if (role == Role.INVESTOR && !folio.getInvestorId().equals(currentUser.getId())) {
+            throw ResourceNotFoundException.of("InvestorFolio", id);
+        }
+        if (role == Role.DISTRIBUTOR) {
+            boolean owns = folio.getDistributorId() != null
+                    && folio.getDistributorId().equals(currentUser.getId());
+            if (!owns) {
+                throw ResourceNotFoundException.of("InvestorFolio", id);
+            }
+        }
+        return folio;
     }
 
     @Transactional(readOnly = true)
@@ -137,65 +171,6 @@ public class FolioService {
     }
 
 
-    @Transactional(readOnly = true)
-    public InvestorFolio loadAccessible(Long id) {
-        InvestorFolio folio = folioRepository.findById(id)
-                .orElseThrow(() -> ResourceNotFoundException.of("InvestorFolio", id));
-        Role role = currentUser.getRole();
-        if (role == Role.INVESTOR && !folio.getInvestorId().equals(currentUser.getId())) {
-            throw ResourceNotFoundException.of("InvestorFolio", id);
-        }
-        if (role == Role.DISTRIBUTOR) {
-            // See class-level note: distributorId is assumed == the DISTRIBUTOR user's id.
-            boolean owns = folio.getDistributorId() != null
-                    && folio.getDistributorId().equals(currentUser.getId());
-            if (!owns) {
-                throw ResourceNotFoundException.of("InvestorFolio", id);
-            }
-        }
-        return folio;
-    }
-
-    private UserDto resolveInvestor(CreateFolioRequest req) {
-        if (currentUser.getRole() == Role.INVESTOR) {
-            return authUserClient.getUser(currentUser.getId());
-        }
-        if (req.investorId() == null) {
-            throw new BusinessException("investorId is required when creating a folio on behalf of an investor");
-        }
-        UserDto investor = authUserClient.getUser(req.investorId());
-        if (investor == null) {
-            throw ResourceNotFoundException.of("User", req.investorId());
-        }
-        if (!"INVESTOR".equals(investor.role())) {
-            throw new BusinessException("Folios can only be created for users with the INVESTOR role");
-        }
-        return investor;
-    }
-
-    private Long resolveDistributorId(CreateFolioRequest req) {
-        if (req.distributorId() != null) {
-            return req.distributorId();
-        }
-        if (currentUser.getRole() == Role.DISTRIBUTOR) {
-            // See class-level note: distributorId is assumed == the DISTRIBUTOR user's id.
-            return currentUser.getId();
-        }
-        return null;
-    }
-
-    private FolioDto toDto(InvestorFolio folio) {
-        String investorName = safeInvestorName(folio.getInvestorId());
-        return toDto(folio, investorName);
-    }
-
-    private FolioDto toDto(InvestorFolio folio, String investorName) {
-        BigDecimal currentValue = holdingRepository.findByFolio_Id(folio.getId()).stream()
-                .map(FolioHolding::getCurrentValue).filter(v -> v != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return mapper.toFolioDto(folio, Calc.money(currentValue), investorName);
-    }
-
     public String safeInvestorName(Long investorId) {
         try {
             UserDto user = authUserClient.getUser(investorId);
@@ -204,4 +179,26 @@ public class FolioService {
             return null;
         }
     }
+
+  
+
+    private FolioDto toDto(InvestorFolio folio) {
+        String investorName = safeInvestorName(folio.getInvestorId());
+        String distributorName=null;
+        if(folio.getDistributorId()!=null)
+        {
+        	
+        	 distributorName= safeInvestorName(folio.getDistributorId());
+        }
+        return toDto(folio, investorName,distributorName);
+    }
+
+    private FolioDto toDto(InvestorFolio folio, String investorName,String distributorName) {
+        BigDecimal currentValue = holdingRepository.findByFolio_Id(folio.getId()).stream()
+                .map(FolioHolding::getCurrentValue).filter(v -> v != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return mapper.toFolioDto(folio, Calc.money(currentValue), investorName,distributorName);
+    }
+
+  
 }

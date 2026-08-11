@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Compliance monitoring: KYC posture, transaction-flag review workflow and report generation. */
+
 @Service
 public class ComplianceService {
 
@@ -41,11 +41,7 @@ public class ComplianceService {
         this.auditService = auditService;
     }
 
-    /**
-     * KycRecord is owned by folio-kyc-service, so this delegates to FolioKycClient.listKyc(...)
-     * instead of querying a local KycRecordRepository (as the monolith / old
-     * compliance-kyc-service used to).
-     */
+    
     public ComplianceKycStatusDto kycStatus() {
         List<KycRecordDto> all;
         try {
@@ -60,10 +56,7 @@ public class ComplianceService {
         return new ComplianceKycStatusDto(compliant, pending, nonCompliant, expired, all.size());
     }
 
-    /**
-     * TransactionFlag is owned by transaction-service, so this delegates to
-     * TransactionClient instead of querying a local TransactionFlagRepository.
-     */
+ 
     public List<TransactionFlagDto> flags(FlagStatus status) {
         try {
             return transactionClient.flags(status == null ? null : status.name());
@@ -72,12 +65,7 @@ public class ComplianceService {
         }
     }
 
-    /**
-     * Workflow: OPEN -> REVIEWED -> CLEARED / ESCALATED (and ESCALATED -> CLEARED). The
-     * transition validation itself now lives in transaction-service (it owns the
-     * entity and its current state) - a rejected transition comes back as a FeignException
-     * that we translate into the same BusinessException the monolith used to throw locally.
-     */
+   
     public TransactionFlagDto reviewFlag(Long id, FlagStatus to, String note) {
         Map<String, String> body = new HashMap<>();
         body.put("status", to.name());

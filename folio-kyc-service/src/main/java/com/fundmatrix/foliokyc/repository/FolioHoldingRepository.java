@@ -23,7 +23,7 @@ public interface FolioHoldingRepository extends JpaRepository<FolioHolding, Long
 
     Optional<FolioHolding> findByFolio_IdAndOptionId(Long folioId, Long optionId);
 
-    /** Holdings in a given scheme option held under folios serviced by a distributor. */
+  
     List<FolioHolding> findByFolio_DistributorIdAndSchemeId(Long distributorId, Long schemeId);
 
     @Query("select coalesce(sum(h.currentValue), 0) from FolioHolding h " +

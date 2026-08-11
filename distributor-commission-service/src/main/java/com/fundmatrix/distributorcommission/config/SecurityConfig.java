@@ -36,12 +36,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/distributors").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/distributors/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/distributors", "/distributors/**")
-                        .hasAnyAuthority("FUND_OPS", "FUND_ACCOUNTANT", "COMPLIANCE", "ADMIN")
+                        .hasAnyAuthority("FUND_OPS", "FUND_ACCOUNTANT", "COMPLIANCE", "ADMIN","DISTRIBUTOR","INVESTOR")
 
                         // ── COMMISSIONS ──
                         .requestMatchers(HttpMethod.GET, "/commissions/mine").hasAuthority("DISTRIBUTOR")
                         .requestMatchers(HttpMethod.GET, "/commissions/distributor/**")
-                        .hasAnyAuthority("FUND_ACCOUNTANT", "ADMIN")
+                        .hasAnyAuthority("FUND_ACCOUNTANT", "ADMIN","DISTRIBUTOR")
                         .requestMatchers(HttpMethod.POST, "/commissions/compute")
                         .hasAnyAuthority("FUND_ACCOUNTANT", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/commissions/*/approve")

@@ -155,14 +155,12 @@ public class DashboardService {
      * just performed here instead of inside distributor-commission-service.
      */
     public DistributorDashboardDto distributorDashboard() {
+    	System.out.println("calling");
         Long userId = currentUser.getId();
-        DistributorDto distributor = distributorCommissionClient.listDistributors().stream()
-                .filter(d -> userId.equals(d.userId()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException("No distributor profile is linked to your account"));
-
-        BigDecimal aum = folioKycClient.aumForDistributor(distributor.id(), null);
-        Long folioCount = folioKycClient.folioCountForDistributor(distributor.id());
+       DistributorDto distributor = distributorCommissionClient.listDistributors().stream().filter(dis->userId==dis.userId()).findFirst().orElseThrow(()->  new BusinessException("Not found"));
+        System.out.println(distributor);
+        BigDecimal aum = folioKycClient.aumForDistributor(distributor.userId(), null);
+        Long folioCount = folioKycClient.folioCountForDistributor(distributor.userId());
 
         List<TrailCommissionDto> commissions =
                 distributorCommissionClient.commissionsByDistributor(distributor.id());
@@ -173,6 +171,7 @@ public class DashboardService {
 
         return new DistributorDashboardDto(distributor.id(), distributor.name(), distributor.arnNumber(),
                 folioCount == null ? 0 : folioCount.intValue(), money(aum), money(paid), money(pending));
+       
     }
 
     // ----------------------------------------------------------------- helpers

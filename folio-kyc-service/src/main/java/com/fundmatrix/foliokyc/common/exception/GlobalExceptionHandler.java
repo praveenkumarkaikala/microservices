@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Translates exceptions into consistent {@link ApiError} responses across the API. */
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
