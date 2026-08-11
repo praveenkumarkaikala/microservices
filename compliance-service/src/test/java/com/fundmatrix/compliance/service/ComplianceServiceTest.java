@@ -55,51 +55,46 @@ class ComplianceServiceTest {
         complianceService = new ComplianceService(folioKycClient, transactionClient, currentUser, auditService);
     }
 
-    @Test
-    void kycStatus_compliantBranch_reflectsCounts() {
-        List<KycRecordDto> records = List.of(
-                new KycRecordDto(1L, "COMPLIANT", LocalDate.now()),
-                new KycRecordDto(2L, "COMPLIANT", LocalDate.now()),
-                new KycRecordDto(3L, "COMPLIANT", LocalDate.now()),
-                new KycRecordDto(4L, "COMPLIANT", LocalDate.now()),
-                new KycRecordDto(5L, "COMPLIANT", LocalDate.now()),
-                new KycRecordDto(6L, "PENDING", LocalDate.now()),
-                new KycRecordDto(7L, "PENDING", LocalDate.now()),
-                new KycRecordDto(8L, "NON_COMPLIANT", LocalDate.now()));
-        when(folioKycClient.listKyc(null)).thenReturn(records);
-
-        ComplianceKycStatusDto dto = complianceService.kycStatus();
-
-        assertThat(dto.compliant()).isEqualTo(5L);
-        assertThat(dto.pending()).isEqualTo(2L);
-        assertThat(dto.nonCompliant()).isEqualTo(1L);
-        assertThat(dto.expired()).isZero();
-        assertThat(dto.total()).isEqualTo(8L);
+    /** Builds a TransactionFlagDto matching the current 11-field record, filling only the fields tests care about. */
+    private TransactionFlagDto flag(Long id, BigDecimal amount, FlagStatus status) {
+        return new TransactionFlagDto(id, id, "TXN-" + id, "FOL0000" + id, "Scheme " + id,
+                amount, "reason " + id, status, null, Instant.now(), null);
     }
 
     @Test
-    void kycStatus_nonCompliantBranch_whenAllZeroButNonCompliant() {
+    void kycStatus_countsRecordsByStatus() {
         List<KycRecordDto> records = List.of(
-                new KycRecordDto(1L, "NON_COMPLIANT", LocalDate.now()),
-                new KycRecordDto(2L, "NON_COMPLIANT", LocalDate.now()),
-                new KycRecordDto(3L, "NON_COMPLIANT", LocalDate.now()));
+                new KycRecordDto(1L, "COMPLIANT", LocalDate.now()),
+                new KycRecordDto(2L, "COMPLIANT", LocalDate.now()),
+                new KycRecordDto(3L, "PENDING", LocalDate.now()),
+                new KycRecordDto(4L, "NON_COMPLIANT", LocalDate.now()));
         when(folioKycClient.listKyc(null)).thenReturn(records);
 
         ComplianceKycStatusDto dto = complianceService.kycStatus();
 
-        assertThat(dto.compliant()).isZero();
-        assertThat(dto.nonCompliant()).isEqualTo(3L);
+        assertThat(dto.compliant()).isEqualTo(2L);
+        assertThat(dto.pending()).isEqualTo(1L);
+        assertThat(dto.nonCompliant()).isEqualTo(1L);
+        assertThat(dto.expired()).isZero();
+        assertThat(dto.total()).isEqualTo(4L);
+    }
+
+    @Test
+    void kycStatus_wrapsFeignFailure_asBusinessException() {
+        when(folioKycClient.listKyc(null)).thenThrow(feignInternalError());
+
+        assertThatThrownBy(() -> complianceService.kycStatus())
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
     void flags_delegatesToFeignClient_withStatusName() {
-        TransactionFlagDto flag = new TransactionFlagDto(1L, 10L, "High value", BigDecimal.TEN,
-                FlagStatus.OPEN, Instant.now(),Instant.now());
-        when(transactionClient.flags("OPEN")).thenReturn(List.of(flag));
+        TransactionFlagDto f = flag(1L, BigDecimal.TEN, FlagStatus.OPEN);
+        when(transactionClient.flags("OPEN")).thenReturn(List.of(f));
 
         List<TransactionFlagDto> result = complianceService.flags(FlagStatus.OPEN);
 
-        assertThat(result).containsExactly(flag);
+        assertThat(result).containsExactly(f);
         verify(transactionClient).flags("OPEN");
     }
 
@@ -114,8 +109,7 @@ class ComplianceServiceTest {
 
     @Test
     void reviewFlag_delegatesToFeignClient_andAudits() {
-        TransactionFlagDto updated = new TransactionFlagDto(1L, 10L, "High value", BigDecimal.TEN,
-                FlagStatus.REVIEWED, Instant.now());
+        TransactionFlagDto updated = flag(1L, BigDecimal.TEN, FlagStatus.REVIEWED);
         when(transactionClient.reviewFlag(eq(1L), any())).thenReturn(updated);
 
         TransactionFlagDto result = complianceService.reviewFlag(1L, FlagStatus.REVIEWED, "looks fine");
@@ -129,11 +123,7 @@ class ComplianceServiceTest {
 
     @Test
     void reviewFlag_wrapsFeignFailure_asBusinessException() {
-        Request request = Request.create(Request.HttpMethod.PATCH, "/transactions/flags/1/review",
-                Map.of(), null, new RequestTemplate());
-        FeignException ex = new FeignException.UnprocessableEntity("Invalid transition",
-                request, "Cannot move flag".getBytes(StandardCharsets.UTF_8), Map.of());
-        when(transactionClient.reviewFlag(eq(1L), any())).thenThrow(ex);
+        when(transactionClient.reviewFlag(eq(1L), any())).thenThrow(feignInternalError());
 
         assertThatThrownBy(() -> complianceService.reviewFlag(1L, FlagStatus.CLEARED, null))
                 .isInstanceOf(BusinessException.class);
@@ -144,8 +134,8 @@ class ComplianceServiceTest {
         lenient().when(currentUser.getEmail()).thenReturn("compliance@fundmatrix.com");
         when(folioKycClient.listKyc(null)).thenReturn(List.of());
         List<TransactionFlagDto> all = List.of(
-                new TransactionFlagDto(1L, 10L, "r1", BigDecimal.valueOf(100), FlagStatus.OPEN, Instant.now()),
-                new TransactionFlagDto(2L, 11L, "r2", BigDecimal.valueOf(200), FlagStatus.CLEARED, Instant.now()));
+                flag(1L, BigDecimal.valueOf(100), FlagStatus.OPEN),
+                flag(2L, BigDecimal.valueOf(200), FlagStatus.CLEARED));
         when(transactionClient.flags(isNull())).thenReturn(all);
 
         ComplianceReportDto report = complianceService.generateReport();
@@ -155,5 +145,12 @@ class ComplianceServiceTest {
         assertThat(report.flaggedTotalCount()).isEqualTo(2);
         assertThat(report.flaggedTotalAmount()).isEqualByComparingTo("300.00");
         verify(auditService).record(eq("COMPLIANCE_REPORT"), eq("Report"), isNull(), anyString());
+    }
+
+    private static FeignException feignInternalError() {
+        Request request = Request.create(Request.HttpMethod.GET, "/x",
+                Map.of(), null, new RequestTemplate());
+        return new FeignException.InternalServerError("boom", request,
+                "boom".getBytes(StandardCharsets.UTF_8), Map.of());
     }
 }
