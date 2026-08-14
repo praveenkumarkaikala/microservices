@@ -147,6 +147,17 @@ class ComplianceServiceTest {
         verify(auditService).record(eq("COMPLIANCE_REPORT"), eq("Report"), isNull(), anyString());
     }
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     private static FeignException feignInternalError() {
         Request request = Request.create(Request.HttpMethod.GET, "/x",
                 Map.of(), null, new RequestTemplate());

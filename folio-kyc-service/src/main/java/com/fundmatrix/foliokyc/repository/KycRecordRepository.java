@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface KycRecordRepository extends JpaRepository<KycRecord, Long> {
-
-    KycRecord findByInvestorId(Long investorId);
+	 KycRecord findByInvestorId(Long investorId);
+   
 
     List<KycRecord> findByKycStatus(KycStatus kycStatus);
 
