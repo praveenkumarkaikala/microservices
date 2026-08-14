@@ -4,6 +4,7 @@ import com.fundmatrix.navaccounting.domain.NavRecord;
 import com.fundmatrix.navaccounting.domain.enums.NavStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,4 +32,12 @@ public interface NavRecordRepository extends JpaRepository<NavRecord, Long> {
      */
     @Query("select distinct n.schemeId from NavRecord n")
     List<Long> findDistinctSchemeIds();
+
+    /**
+     * Distinct option ids captured under a scheme. A scheme has multiple options (Growth,
+     * Dividend Payout, Dividend Reinvestment), each carrying its own NAV/AUM - used by
+     * aumSummary() to aggregate AUM across every option instead of a single scheme-wide record.
+     */
+    @Query("select distinct n.optionId from NavRecord n where n.schemeId = :schemeId")
+    List<Long> findDistinctOptionIdsBySchemeId(@Param("schemeId") Long schemeId);
 }
